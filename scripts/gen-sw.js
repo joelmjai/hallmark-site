@@ -106,7 +106,16 @@ self.addEventListener("fetch", (event) => {
           }
           return response;
         })
-        .catch(() => cached);
+        .catch(() => {
+          // Offline and not precached (e.g. an unexpected URL). For a page
+          // navigation, fall back to the cached catalog instead of a dead
+          // blank tab — there's nothing sensible to fall back to for an
+          // image/font/etc, so those just fail as before.
+          if (event.request.mode === "navigate") {
+            return caches.match("index.html");
+          }
+          return cached;
+        });
     })
   );
 });
