@@ -126,13 +126,13 @@
   }
 
   root.innerHTML = `
-    <div>
+    <div class="reveal-up">
       <div class="product-media-main">
         <img id="main-image" src="${product.images[0]}" alt="${product.name}">
       </div>
       ${thumbsHTML()}
     </div>
-    <div class="product-info">
+    <div class="product-info reveal-up" style="transition-delay:0.1s">
       <span class="product-category">${product.category}</span>
       <h1 class="product-name">${product.name}</h1>
       <div class="product-brand">Brand: <a href="index.html?brand=${encodeURIComponent(product.brand)}">${product.brand}</a></div>
@@ -153,11 +153,22 @@
     </div>
   `;
 
+  // Reveal the hero block (image + info) immediately — it's above the fold,
+  // a scroll-triggered delay here would just look like a loading glitch.
+  requestAnimationFrame(() => {
+    root.querySelectorAll(":scope > .reveal-up").forEach((el) => el.classList.add("in-view"));
+  });
+
   const thumbStrip = document.getElementById("thumb-strip");
   if (thumbStrip) {
     thumbStrip.querySelectorAll("button").forEach((btn) => {
       btn.addEventListener("click", () => {
-        document.getElementById("main-image").src = product.images[+btn.dataset.idx];
+        const mainImg = document.getElementById("main-image");
+        mainImg.style.opacity = "0";
+        setTimeout(() => {
+          mainImg.src = product.images[+btn.dataset.idx];
+          mainImg.style.opacity = "1";
+        }, 150);
         thumbStrip.querySelectorAll("button").forEach((b) => b.classList.remove("active"));
         btn.classList.add("active");
       });
@@ -181,8 +192,9 @@
     moreSection.remove();
   } else {
     document.getElementById("more-from-title").textContent = relatedTitle;
-    document.getElementById("more-grid").innerHTML = related.slice(0, 8).map((p) => `
-      <a class="card" href="product.html?id=${encodeURIComponent(p.id)}">
+    const moreGrid = document.getElementById("more-grid");
+    moreGrid.innerHTML = related.slice(0, 8).map((p, i) => `
+      <a class="card reveal-up" href="product.html?id=${encodeURIComponent(p.id)}" style="transition-delay:${Math.min(i * 0.05, 0.3)}s">
         <div class="card-media">
           <span class="category-badge">${p.category}</span>
           <img src="${p.images[0]}" alt="${p.name}" loading="lazy">
@@ -195,5 +207,22 @@
         </div>
       </a>
     `).join("");
+
+    if ("IntersectionObserver" in window) {
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              entry.target.classList.add("in-view");
+              observer.unobserve(entry.target);
+            }
+          });
+        },
+        { threshold: 0.12, rootMargin: "0px 0px -40px 0px" }
+      );
+      moreGrid.querySelectorAll(".reveal-up").forEach((el) => observer.observe(el));
+    } else {
+      moreGrid.querySelectorAll(".reveal-up").forEach((el) => el.classList.add("in-view"));
+    }
   }
 })();

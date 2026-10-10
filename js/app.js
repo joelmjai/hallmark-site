@@ -6,6 +6,7 @@
   const tabsEl = document.getElementById("tabs");
   const searchEl = document.getElementById("search");
   const countEl = document.getElementById("result-count");
+  const marqueeEl = document.getElementById("marquee-track");
 
   const params = new URLSearchParams(window.location.search);
   let activeCategory = params.get("category") || "All";
@@ -13,14 +14,46 @@
   let query = "";
   let firstRender = true;
 
-  function slug(s) {
-    return s.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+  const revealObserver = "IntersectionObserver" in window
+    ? new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              entry.target.classList.add("in-view");
+              revealObserver.unobserve(entry.target);
+            }
+          });
+        },
+        { threshold: 0.12, rootMargin: "0px 0px -40px 0px" }
+      )
+    : null;
+
+  function renderMarquee() {
+    if (!marqueeEl) return;
+    const brandsWithLogos = BRANDS.filter((b) => b.logo && PRODUCTS.some((p) => p.brandSlug === b.id));
+    if (brandsWithLogos.length === 0) {
+      marqueeEl.closest(".brand-marquee")?.remove();
+      return;
+    }
+    const logos = brandsWithLogos
+      .map((b) => `<img src="${b.logo}" alt="${b.name}" loading="lazy">`)
+      .join("");
+    marqueeEl.innerHTML = logos + logos; // duplicated for seamless loop
+  }
+
+  function positionTabIndicator() {
+    const indicator = document.getElementById("tab-indicator");
+    const activeBtn = tabsEl.querySelector(".tab-btn.active");
+    if (!indicator || !activeBtn) return;
+    indicator.style.width = `${activeBtn.offsetWidth}px`;
+    indicator.style.transform = `translateX(${activeBtn.offsetLeft}px)`;
   }
 
   function renderTabs() {
-    tabsEl.innerHTML = TABS.map((cat) => `
+    const buttons = TABS.map((cat) => `
       <button class="tab-btn${cat === activeCategory ? " active" : ""}" data-cat="${cat}">${cat}</button>
     `).join("");
+    tabsEl.innerHTML = `<div class="tab-indicator" id="tab-indicator"></div>${buttons}`;
     tabsEl.querySelectorAll(".tab-btn").forEach((btn) => {
       btn.addEventListener("click", () => {
         activeCategory = btn.dataset.cat;
@@ -29,6 +62,7 @@
         renderGrid();
       });
     });
+    positionTabIndicator();
   }
 
   function matches(p) {
@@ -48,10 +82,10 @@
   }
 
   function cardHTML(p, index) {
-    const delay = firstRender ? Math.min(index * 0.03, 0.4) : 0;
+    const delay = Math.min(index * 0.04, 0.4);
     const img = p.images[0] || "";
     return `
-      <a class="card" href="product.html?id=${encodeURIComponent(p.id)}" style="animation-delay:${delay}s">
+      <a class="card reveal-up" href="product.html?id=${encodeURIComponent(p.id)}" style="transition-delay:${delay}s">
         <div class="card-media">
           <span class="category-badge">${p.category}</span>
           <img src="${img}" alt="${p.name}" loading="lazy">
@@ -82,6 +116,12 @@
     }
     grid.innerHTML = results.map(cardHTML).join("");
     firstRender = false;
+
+    if (revealObserver) {
+      grid.querySelectorAll(".reveal-up").forEach((el) => revealObserver.observe(el));
+    } else {
+      grid.querySelectorAll(".reveal-up").forEach((el) => el.classList.add("in-view"));
+    }
   }
 
   searchEl.addEventListener("input", (e) => {
@@ -89,6 +129,9 @@
     renderGrid();
   });
 
+  window.addEventListener("resize", positionTabIndicator);
+
+  renderMarquee();
   renderTabs();
   renderGrid();
 })();
