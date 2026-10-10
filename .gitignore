@@ -1,0 +1,9 @@
+# Single-file WhatsApp/email bundle — ~103 MB, over GitHub's 100 MB per-file
+# limit, and not needed for GitHub Pages (which serves the multi-file site
+# directly). Regenerate anytime with: node build.js
+dist/
+
+# Claude Code tooling/cache — not part of the site
+.agents/
+.claude/
+skills-lock.json
