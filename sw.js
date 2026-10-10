@@ -6,7 +6,7 @@
 // or images, so installed phones fetch the new content on next launch instead
 // of serving the old cached version forever. See CLAUDE.md for details.
 
-const CACHE_VERSION = "v2";
+const CACHE_VERSION = "v3";
 const CACHE_NAME = `hallmark-cache-${CACHE_VERSION}`;
 
 const PRECACHE_URLS = [
