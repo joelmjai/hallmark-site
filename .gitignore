@@ -7,3 +7,7 @@ dist/
 .agents/
 .claude/
 skills-lock.json
+
+# graphify knowledge-graph output — analysis artifact, not part of the
+# deployed site, don't ship it to GitHub Pages
+graphify-out/
